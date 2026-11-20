@@ -94,27 +94,12 @@ class MiddlemanBot(commands.Bot):
         self.add_view(StaffApplyView())
         self.add_view(VouchView())
         self.add_view(DMSubscriptionView())
-        if GUILD_ID:
-            guild = discord.Object(id=GUILD_ID)
-            self.tree.copy_global_to(guild=guild)
-            try:
-                await self.tree.sync(guild=guild)
-                print(f"Slash commands synced to guild {GUILD_ID}")
-            except discord.Forbidden as error:
-                # A guild-sync 403 must not prevent the gateway bot from starting.
-                print(f"Guild slash-command sync failed (Missing Access): {error}")
-                try:
-                    await self.tree.sync()
-                    print("Fallback global slash-command sync succeeded")
-                except discord.HTTPException as global_error:
-                    print(f"Global slash-command sync also failed: {global_error}")
-            except discord.HTTPException as error:
-                print(f"Guild slash-command sync failed; bot will still start: {error}")
-        else:
-            try:
-                await self.tree.sync()
-            except discord.HTTPException as error:
-                print(f"Global slash-command sync failed; bot will still start: {error}")
+        # Register slash commands globally so the bot's commands are available in every server.
+        try:
+            await self.tree.sync()
+            print("Global slash-command sync completed")
+        except discord.HTTPException as error:
+            print(f"Global slash-command sync failed; bot will still start: {error")
 
     async def on_ready(self):
         print(f"Logged in as {self.user} (ID: {self.user.id})")
@@ -537,11 +522,7 @@ class SupportPanelView(discord.ui.View):
 
 async def open_support_ticket(interaction: discord.Interaction):
     guild = interaction.guild
-    if guild is None or guild.id != GUILD_ID:
-        return await interaction.response.send_message(
-            "This support panel is only available in the configured server.",
-            ephemeral=True,
-        )
+
     if interaction.user.bot:
         return await interaction.response.send_message(
             "Bot accounts can't open support tickets.", ephemeral=True
@@ -814,10 +795,7 @@ class DMConfirmationView(discord.ui.View):
 
     @discord.ui.button(label="Send to subscribers", emoji="📨", style=discord.ButtonStyle.green)
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.guild is None or interaction.guild.id != GUILD_ID:
-            return await interaction.response.send_message(
-                "This command is only available in this server.", ephemeral=True
-            )
+
         if not is_admin_or_owner(interaction.user):
             return await interaction.response.send_message(
                 "Administrator permission is required.", ephemeral=True
@@ -908,10 +886,7 @@ async def panel(interaction: discord.Interaction):
 
 @bot.tree.command(description="Send the Kyokah support ticket panel to this channel")
 async def suppanel(interaction: discord.Interaction):
-    if interaction.guild is None or interaction.guild.id != GUILD_ID:
-        return await interaction.response.send_message(
-            "This command is only available in the configured server.", ephemeral=True
-        )
+
     if not interaction.user.guild_permissions.administrator:
         return await deny(interaction, "Only administrators can use this command.")
 
@@ -958,10 +933,7 @@ async def suppanel(interaction: discord.Interaction):
 
 @bot.tree.command(description="Post the opt-in DM announcement panel")
 async def dmpanel(interaction: discord.Interaction):
-    if interaction.guild is None or interaction.guild.id != GUILD_ID:
-        return await interaction.response.send_message(
-            "This command is only available in the configured server.", ephemeral=True
-        )
+
     if not interaction.user.guild_permissions.administrator:
         return await deny(interaction, "Only administrators can post this panel.")
 
@@ -987,10 +959,7 @@ async def dmpanel(interaction: discord.Interaction):
 @bot.tree.command(description="Send a message to members who opted in to DMs")
 @app_commands.describe(message="Message to send to DM subscribers")
 async def senddm(interaction: discord.Interaction, message: str):
-    if interaction.guild is None or interaction.guild.id != GUILD_ID:
-        return await interaction.response.send_message(
-            "This command is only available in the configured server.", ephemeral=True
-        )
+
     if not interaction.user.guild_permissions.administrator:
         return await deny(interaction, "Only administrators can send subscriber DMs.")
     if not message.strip():
@@ -1978,10 +1947,7 @@ async def vacation(interaction: discord.Interaction):
         return await interaction.response.send_message(
             "Use this command in the server.", ephemeral=True
         )
-    if guild.id != GUILD_ID:
-        return await interaction.response.send_message(
-            "This command is only available in the configured server.", ephemeral=True
-        )
+
     if interaction.user.bot:
         return await interaction.response.send_message(
             "Bot accounts can't use this command.", ephemeral=True
@@ -2155,10 +2121,7 @@ async def fill(interaction: discord.Interaction):
         return await interaction.response.send_message(
             "Use this command in the server.", ephemeral=True
         )
-    if guild.id != GUILD_ID:
-        return await interaction.response.send_message(
-            "This command is only available in the configured server.", ephemeral=True
-        )
+
     if interaction.user.bot:
         return await interaction.response.send_message(
             "Bot accounts can't use this command.", ephemeral=True
