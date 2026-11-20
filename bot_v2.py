@@ -109,6 +109,8 @@ class MiddlemanBot(commands.Bot):
 
 
 bot = MiddlemanBot()
+# Remove discord.py's built-in prefix help before registering our hybrid help.
+bot.remove_command("help")
 
 
 # ---------- make every command work as both / and + ----------
