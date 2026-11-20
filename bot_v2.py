@@ -233,18 +233,16 @@ async def deny(interaction: discord.Interaction, text: str = "You don't have per
 
 
 def get_ticket(channel):
-    """Ticket info is stored in the channel topic: 'owner=ID claimed=ID'."""
+    """Identify ticket channels by their owner metadata in the channel topic."""
     if not isinstance(channel, discord.TextChannel):
-        return None
-    if TICKET_CATEGORY_ID and channel.category_id != TICKET_CATEGORY_ID:
         return None
     data = {}
     for part in (getattr(channel, "topic", None) or "").split():
         if "=" in part:
             k, v = part.split("=", 1)
             data[k] = v
+    # Topic metadata is authoritative; category IDs may be stale or changed by admins.
     return data if data.get("owner", "").isdigit() else None
-
 
 def load_dm_subscription_state() -> tuple:
     try:
