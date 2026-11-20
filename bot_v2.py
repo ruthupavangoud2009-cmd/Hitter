@@ -2278,6 +2278,49 @@ async def fill(interaction: discord.Interaction):
 
 
 # ---------- help command ----------
+BOT_STARTED_AT = datetime.datetime.now(datetime.timezone.utc)
+
+def _read_host_memory():
+    try:
+        values = {}
+        with open("/proc/meminfo", "r", encoding="utf-8") as memory_file:
+            for line in memory_file:
+                key, value = line.split(":", 1)
+                values[key] = int(value.strip().split()[0])
+        total = values.get("MemTotal", 0) / 1024
+        available = values.get("MemAvailable", values.get("MemFree", 0)) / 1024
+        return total, max(0, total - available), available
+    except (OSError, ValueError, KeyError):
+        return None, None, None
+
+@bot.hybrid_command(name="ping", description="Show Kyokah gateway latency")
+async def ping_command(ctx):
+    embed = discord.Embed(title="Kyokah • Gateway Ping", description=f"Gateway latency: {bot.latency * 1000:.1f} ms", color=EMBED_COLOR)
+    embed.set_footer(text="Discord gateway heartbeat latency")
+    await ctx.send(embed=embed)
+
+@bot.hybrid_command(name="stats", description="Show Kyokah bot and hosting statistics")
+async def stats_command(ctx):
+    uptime = datetime.datetime.now(datetime.timezone.utc) - BOT_STARTED_AT
+    total_ram, used_ram, free_ram = _read_host_memory()
+    try:
+        loads = os.getloadavg()
+        cpu_text = f"{loads[0]:.2f} / {loads[1]:.2f} / {loads[2]:.2f} (1 / 5 / 15 min)"
+    except (AttributeError, OSError):
+        cpu_text = "Unavailable"
+    embed = discord.Embed(title="Kyokah • System Stats", color=EMBED_COLOR)
+    embed.add_field(name="Gateway Ping", value=f"{bot.latency * 1000:.1f} ms", inline=True)
+    embed.add_field(name="Uptime", value=str(uptime).split(".")[0], inline=True)
+    embed.add_field(name="Servers", value=str(len(bot.guilds)), inline=True)
+    embed.add_field(name="Cached Users", value=str(len(bot.users)), inline=True)
+    if total_ram is not None:
+        embed.add_field(name="Host RAM (visible)", value=f"Used: {used_ram:.0f} MiB / {total_ram:.0f} MiB\nFree: {free_ram:.0f} MiB", inline=False)
+    else:
+        embed.add_field(name="Host RAM", value="Unavailable", inline=False)
+    embed.add_field(name="Host CPU Load", value=cpu_text, inline=False)
+    embed.set_footer(text="RAM/load may reflect shared host resources, not Render's exact service quota.")
+    await ctx.send(embed=embed)
+
 @bot.hybrid_command(name="botname", description="Change Kyokah's server nickname (owner only)")
 @app_commands.describe(name="New nickname for Kyokah in this server")
 async def botname_command(ctx, name: str):
