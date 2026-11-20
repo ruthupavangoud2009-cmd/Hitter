@@ -97,9 +97,24 @@ class MiddlemanBot(commands.Bot):
         if GUILD_ID:
             guild = discord.Object(id=GUILD_ID)
             self.tree.copy_global_to(guild=guild)
-            await self.tree.sync(guild=guild)
+            try:
+                await self.tree.sync(guild=guild)
+                print(f"Slash commands synced to guild {GUILD_ID}")
+            except discord.Forbidden as error:
+                # A guild-sync 403 must not prevent the gateway bot from starting.
+                print(f"Guild slash-command sync failed (Missing Access): {error}")
+                try:
+                    await self.tree.sync()
+                    print("Fallback global slash-command sync succeeded")
+                except discord.HTTPException as global_error:
+                    print(f"Global slash-command sync also failed: {global_error}")
+            except discord.HTTPException as error:
+                print(f"Guild slash-command sync failed; bot will still start: {error}")
         else:
-            await self.tree.sync()
+            try:
+                await self.tree.sync()
+            except discord.HTTPException as error:
+                print(f"Global slash-command sync failed; bot will still start: {error}")
 
     async def on_ready(self):
         print(f"Logged in as {self.user} (ID: {self.user.id})")
