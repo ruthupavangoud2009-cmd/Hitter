@@ -205,9 +205,20 @@ async def on_command_error(ctx, error):
     traceback.print_exception(type(error), error, error.__traceback__)
 
 # ---------- helpers ----------
+def is_bot_owner(member) -> bool:
+    return member.id == OWNER_ID
+
+
+
+def is_admin_or_owner(member) -> bool:
+    return member.guild_permissions.administrator or is_bot_owner(member)
+
+
+
 def is_mm(member: discord.Member) -> bool:
     return (
-        any(r.id == MIDDLEMAN_ROLE_ID for r in member.roles)
+        is_bot_owner(member)
+        or any(r.id == MIDDLEMAN_ROLE_ID for r in member.roles)
         or member.guild_permissions.administrator
     )
 
