@@ -99,7 +99,7 @@ class MiddlemanBot(commands.Bot):
             await self.tree.sync()
             print("Global slash-command sync completed")
         except discord.HTTPException as error:
-            print(f"Global slash-command sync failed; bot will still start: {error")
+            print(f"Global slash-command sync failed; bot will still start: {error}")
 
     async def on_ready(self):
         print(f"Logged in as {self.user} (ID: {self.user.id})")
