@@ -618,7 +618,7 @@ async def open_support_ticket(interaction: discord.Interaction):
                 )
 
             ticket_embed = discord.Embed(
-                title="GameBoost Support Ticket",
+                title="Kyokah Support Ticket",
                 description=(
                     f"{user.mention}, please explain the issue you need help with. "
                     "You can attach screenshots or other relevant information here."
@@ -908,7 +908,7 @@ async def panel(interaction: discord.Interaction):
     await interaction.followup.send("Panel sent.", ephemeral=True)
 
 
-@bot.tree.command(description="Send the GameBoost support ticket panel to this channel")
+@bot.tree.command(description="Send the Kyokah support ticket panel to this channel")
 async def suppanel(interaction: discord.Interaction):
     if interaction.guild is None or interaction.guild.id != GUILD_ID:
         return await interaction.response.send_message(
@@ -918,9 +918,9 @@ async def suppanel(interaction: discord.Interaction):
         return await deny(interaction, "Only administrators can use this command.")
 
     embed = discord.Embed(
-        title="<:Support:1569561796103245944> GameBoost SUPPORT",
+        title="<:Support:1569561796103245944> Kyokah SUPPORT",
         description=(
-            "**Welcome to GameBoost Support**\n\n"
+            "**Welcome to Kyokah Support**\n\n"
             "Need help with an issue, question, report, or anything else? "
             "Our Support Team is ready to assist.\n\n"
             "**<:arrow_arrow:1562350329427923014> GET IN TOUCH**\n\n"
@@ -2278,6 +2278,25 @@ async def fill(interaction: discord.Interaction):
 
 
 # ---------- help command ----------
+@bot.hybrid_command(name="botname", description="Change Kyokah's server nickname (owner only)")
+@app_commands.describe(name="New nickname for Kyokah in this server")
+async def botname_command(ctx, name: str):
+    if ctx.author.id != OWNER_ID:
+        return await ctx.send("Only the configured bot owner can use this command.", ephemeral=True)
+    if ctx.guild is None:
+        return await ctx.send("This command can only be used in a server.", ephemeral=True)
+    name = name.strip()
+    if not name or len(name) > 32:
+        return await ctx.send("Nickname must be between 1 and 32 characters.", ephemeral=True)
+    try:
+        await ctx.guild.me.edit(nick=name, reason=f"Bot nickname changed by owner {ctx.author.id}")
+    except discord.Forbidden:
+        return await ctx.send("I need Manage Nicknames permission and my role must be high enough to change my nickname.", ephemeral=True)
+    except discord.HTTPException as error:
+        return await ctx.send(f"Discord rejected the nickname change: {error}", ephemeral=True)
+    await ctx.send(f"My server nickname is now **{discord.utils.escape_markdown(name)}**.")
+
+
 @bot.hybrid_command(name="help", description="Browse all Hitter commands")
 async def help_command(ctx):
     commands_list = sorted(
