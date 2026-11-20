@@ -2249,5 +2249,56 @@ async def fill(interaction: discord.Interaction):
     )
 
 
+# ---------- help command ----------
+@bot.hybrid_command(name="help", description="Browse all Hitter commands")
+async def help_command(ctx):
+    commands_list = sorted(
+        [command for command in bot.commands if not command.hidden and command.name != "help"],
+        key=lambda command: command.name.lower(),
+    )
+    if not commands_list:
+        return await ctx.send("No commands are currently registered.")
+
+    per_page = 12
+    pages = max(1, (len(commands_list) + per_page - 1) // per_page)
+
+    def build_embed(page_number):
+        start = page_number * per_page
+        chunk = commands_list[start:start + per_page]
+        embed = discord.Embed(
+            title="Hitter | Command Directory",
+            description=f"Prefix: `+`  •  Slash commands supported\nPage {page_number + 1}/{pages}",
+            color=EMBED_COLOR,
+        )
+        for command in chunk:
+            description = command.description or "No description provided."
+            embed.add_field(name=f"+{command.name}", value=description[:180], inline=False)
+        embed.set_footer(text=f"{len(commands_list)} commands • Use +help or /help")
+        return embed
+
+    if pages == 1:
+        return await ctx.send(embed=build_embed(0))
+
+    class HelpPager(discord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=120)
+            self.page = 0
+
+        async def update(self, interaction):
+            await interaction.response.edit_message(embed=build_embed(self.page), view=self)
+
+        @discord.ui.button(label="Previous", style=discord.ButtonStyle.secondary)
+        async def previous(self, interaction, button):
+            self.page = (self.page - 1) % pages
+            await self.update(interaction)
+
+        @discord.ui.button(label="Next", style=discord.ButtonStyle.primary)
+        async def next(self, interaction, button):
+            self.page = (self.page + 1) % pages
+            await self.update(interaction)
+
+    await ctx.send(embed=build_embed(0), view=HelpPager())
+
+
 bot.run(TOKEN)
 
