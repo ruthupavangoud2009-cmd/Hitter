@@ -2282,18 +2282,18 @@ async def fill(interaction: discord.Interaction):
 @app_commands.describe(name="New nickname for Kyokah in this server")
 async def botname_command(ctx, name: str):
     if ctx.author.id != OWNER_ID:
-        return await ctx.send("Only the configured bot owner can use this command.", ephemeral=True)
+        return await ctx.send("Only the configured bot owner can use this command.")
     if ctx.guild is None:
-        return await ctx.send("This command can only be used in a server.", ephemeral=True)
+        return await ctx.send("This command can only be used in a server.")
     name = name.strip()
     if not name or len(name) > 32:
-        return await ctx.send("Nickname must be between 1 and 32 characters.", ephemeral=True)
+        return await ctx.send("Nickname must be between 1 and 32 characters.")
     try:
         await ctx.guild.me.edit(nick=name, reason=f"Bot nickname changed by owner {ctx.author.id}")
     except discord.Forbidden:
-        return await ctx.send("I need Manage Nicknames permission and my role must be high enough to change my nickname.", ephemeral=True)
+        return await ctx.send("I need Manage Nicknames permission and my role must be high enough to change my nickname.")
     except discord.HTTPException as error:
-        return await ctx.send(f"Discord rejected the nickname change: {error}", ephemeral=True)
+        return await ctx.send(f"Discord rejected the nickname change: {error}")
     await ctx.send(f"My server nickname is now **{discord.utils.escape_markdown(name)}**.")
 
 
