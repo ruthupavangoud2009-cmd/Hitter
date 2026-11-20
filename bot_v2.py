@@ -2300,5 +2300,10 @@ async def help_command(ctx):
     await ctx.send(embed=build_embed(0), view=HelpPager())
 
 
+@bot.hybrid_command(name="commands", description="Show the command directory")
+async def commands_command(ctx):
+    await help_command(ctx)
+
+
 bot.run(TOKEN)
 
