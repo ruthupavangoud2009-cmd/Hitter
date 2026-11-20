@@ -1,4 +1,4 @@
-# Hitter / GameBoost Middleman Bot
+# Kyokah Middleman Bot
 
 Discord bot with ticket panels, middleman tools, vouches, staff applications, DM subscriptions, vacation-role management and fill roles.
 
