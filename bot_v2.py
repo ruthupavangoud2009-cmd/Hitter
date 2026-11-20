@@ -2318,60 +2318,89 @@ async def botname_command(ctx, name: str):
     await ctx.send(f"My server nickname is now **{discord.utils.escape_markdown(name)}**.")
 
 
-@bot.hybrid_command(name="help", description="Browse all Hitter commands")
+@bot.hybrid_command(name="help", description="Open the interactive Kyokah command help")
 async def help_command(ctx):
     commands_list = sorted(
-        [command for command in bot.commands if not command.hidden and command.name != "help"],
+        [command for command in bot.commands if not command.hidden and command.name not in {"help", "commands"}],
         key=lambda command: command.name.lower(),
     )
     if not commands_list:
         return await ctx.send("No commands are currently registered.")
 
-    per_page = 12
-    pages = max(1, (len(commands_list) + per_page - 1) // per_page)
+    # Categorize from the actual registered command names; keep this help panel fast and self-contained.
+    category_rules = [
+        ("🛡️ Moderation", ("ban", "kick", "mute", "unmute", "warn", "purge", "clear", "timeout", "lock", "unlock", "slowmode", "nuke", "hack", "raid")),
+        ("🎫 Tickets & Support", ("ticket", "support", "close", "claim", "transcript")),
+        ("🎵 Music", ("play", "pause", "resume", "skip", "stop", "queue", "volume", "loop", "lyrics", "leave", "join", "music")),
+        ("🤖 AI", ("ai", "chat", "ask", "gpt", "gemini", "translate")),
+        ("⚙️ Utility", ("ping", "stats", "botname", "avatar", "userinfo", "serverinfo", "roleinfo", "channelinfo", "help", "uptime")),
+        ("🎉 Fun & Games", ("meme", "joke", "8ball", "coin", "dice", "game", "fun", "ship", "roast")),
+        ("👥 Social", ("vouch", "rep", "profile", "marry", "friend", "social")),
+        ("🔧 Server Management", ("setup", "config", "autorole", "welcome", "goodbye", "verify", "reactionrole", "role", "announce", "embed")),
+    ]
+    grouped = {name: [] for name, _ in category_rules}
+    grouped["📦 Other Commands"] = []
+    for command in commands_list:
+        name = command.name.lower()
+        category = next((category for category, keywords in category_rules if any(keyword in name for keyword in keywords)), "📦 Other Commands")
+        grouped[category].append(command)
+    grouped = {name: items for name, items in grouped.items() if items}
 
-    def build_embed(page_number):
-        start = page_number * per_page
-        chunk = commands_list[start:start + per_page]
+    def home_embed():
         embed = discord.Embed(
-            title="Hitter | Command Directory",
-            description=f"Prefix: `+`  •  Slash commands supported\nPage {page_number + 1}/{pages}",
+            title="KYOKAH HELP",
+            description="Select a category from the menu below to browse commands.",
             color=EMBED_COLOR,
         )
-        for command in chunk:
-            description = command.description or "No description provided."
-            embed.add_field(name=f"+{command.name}", value=description[:180], inline=False)
-        embed.set_footer(text=f"{len(commands_list)} commands • Use +help or /help")
+        embed.set_footer(text=f"{len(commands_list)} commands • +help / ?help")
         return embed
 
-    if pages == 1:
-        return await ctx.send(embed=build_embed(0))
+    def category_embed(category, page=0):
+        items = grouped[category]
+        per_page = 10
+        pages = max(1, (len(items) + per_page - 1) // per_page)
+        page = max(0, min(page, pages - 1))
+        embed = discord.Embed(title=f"{category} Commands", description=f"Page {page + 1}/{pages}", color=EMBED_COLOR)
+        for command in items[page * per_page:(page + 1) * per_page]:
+            desc = (command.description or "No description provided.").strip()
+            usage = f"+{command.name}"
+            if getattr(command, "signature", ""):
+                usage += f" {command.signature}"
+            embed.add_field(name=f"{getattr(command, 'emoji', '') or '🔹'} {usage}", value=desc[:180], inline=False)
+        embed.set_footer(text="Choose another category below • KYOKAH")
+        return embed
 
-    class HelpPager(discord.ui.View):
+    class HelpPanel(discord.ui.View):
         def __init__(self):
-            super().__init__(timeout=120)
+            super().__init__(timeout=180)
+            self.category = None
             self.page = 0
+            options = [discord.SelectOption(label=label[:100], value=label, emoji=label.split()[0]) for label in grouped.keys()]
+            select = discord.ui.Select(placeholder="📚 Select a command category…", options=options, min_values=1, max_values=1)
+            select.callback = self.select_category
+            self.add_item(select)
 
-        async def update(self, interaction):
-            await interaction.response.edit_message(embed=build_embed(self.page), view=self)
+        async def select_category(self, interaction):
+            self.category = interaction.data["values"][0]
+            self.page = 0
+            await interaction.response.edit_message(embed=category_embed(self.category, self.page), view=self)
 
-        @discord.ui.button(label="Previous", style=discord.ButtonStyle.secondary)
-        async def previous(self, interaction, button):
-            self.page = (self.page - 1) % pages
-            await self.update(interaction)
+        @discord.ui.button(label="🏠 Home", style=discord.ButtonStyle.secondary, row=1)
+        async def home(self, interaction, button):
+            self.category = None
+            self.page = 0
+            await interaction.response.edit_message(embed=home_embed(), view=self)
 
-        @discord.ui.button(label="Next", style=discord.ButtonStyle.primary)
-        async def next(self, interaction, button):
-            self.page = (self.page + 1) % pages
-            await self.update(interaction)
+        @discord.ui.button(label="❌ Close", style=discord.ButtonStyle.danger, row=1)
+        async def close(self, interaction, button):
+            await interaction.response.edit_message(embed=discord.Embed(title="KYOKAH Help closed", color=EMBED_COLOR), view=None)
 
-    await ctx.send(embed=build_embed(0), view=HelpPager())
+    await ctx.send(embed=home_embed(), view=HelpPanel())
 
 
-@bot.hybrid_command(name="commands", description="Show the command directory")
+@bot.hybrid_command(name="commands", description="Open the interactive Kyokah command help")
 async def commands_command(ctx):
     await help_command(ctx)
-
 
 bot.run(TOKEN)
 
