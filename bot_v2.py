@@ -84,7 +84,7 @@ PREFIX = "+"
 
 class MiddlemanBot(commands.Bot):
     def __init__(self):
-        super().__init__(command_prefix=PREFIX, intents=intents, case_insensitive=True)
+        super().__init__(command_prefix=PREFIX, intents=intents, case_insensitive=True, owner_ids={OWNER_ID})
 
     async def setup_hook(self):
         # Re-register buttons so they keep working after a restart
@@ -809,7 +809,7 @@ class DMConfirmationView(discord.ui.View):
             return await interaction.response.send_message(
                 "This command is only available in this server.", ephemeral=True
             )
-        if not interaction.user.guild_permissions.administrator:
+        if not is_admin_or_owner(interaction.user):
             return await interaction.response.send_message(
                 "Administrator permission is required.", ephemeral=True
             )
@@ -1673,7 +1673,7 @@ async def vouchgen(interaction: discord.Interaction):
         return await interaction.response.send_message(
             "Run this command inside a trade ticket.", ephemeral=True
         )
-    if not interaction.user.guild_permissions.administrator and not is_mm(interaction.user):
+    if not is_admin_or_owner(interaction.user) and not is_mm(interaction.user):
         return await deny(interaction, "Only middlemen or administrators can send this panel.")
 
     data = load_vouches()
@@ -1733,7 +1733,7 @@ async def complete(interaction: discord.Interaction):
         return await deny(interaction, "This command is for middlemen only.")
     if "claimed" not in info:
         return await interaction.response.send_message("Claim this ticket first.", ephemeral=True)
-    if str(interaction.user.id) != info["claimed"] and not interaction.user.guild_permissions.administrator:
+    if str(interaction.user.id) != info["claimed"] and not is_admin_or_owner(interaction.user):
         return await deny(interaction, "Only the middleman who claimed this ticket can complete it.")
 
     async with _vouch_lock:
