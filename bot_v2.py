@@ -533,12 +533,29 @@ async def open_support_ticket(interaction: discord.Interaction):
             "Bot accounts can't open support tickets.", ephemeral=True
         )
 
+    # Use the configured support category when valid; otherwise recover by name,
+    # and create it if it is missing so support tickets don't fail on a stale ID.
     category = guild.get_channel(SUPPORT_CATEGORY_ID)
     if not isinstance(category, discord.CategoryChannel):
-        return await interaction.response.send_message(
-            "The support ticket category is missing or isn't a category. Please contact an administrator.",
-            ephemeral=True,
-        )
+        category = discord.utils.get(guild.categories, name="Support")
+    if not isinstance(category, discord.CategoryChannel):
+        try:
+            category = await guild.create_category(
+                "Support",
+                reason="Create missing support-ticket category",
+            )
+        except discord.Forbidden:
+            return await interaction.response.send_message(
+                "I need Manage Channels permission to create the Support category. "
+                "Please grant it or create a category named Support.",
+                ephemeral=True,
+            )
+        except discord.HTTPException as error:
+            print(f"Could not create support category: {error}")
+            return await interaction.response.send_message(
+                "Discord couldn't create the Support category. Please try again or contact an administrator.",
+                ephemeral=True,
+            )
 
     support_role = guild.get_role(MIDDLEMAN_ROLE_ID)
     bot_member = guild.me
@@ -896,14 +913,14 @@ async def suppanel(interaction: discord.Interaction):
             "**Welcome to Kyokah Support**\n\n"
             "Need help with an issue, question, report, or anything else? "
             "Our Support Team is ready to assist.\n\n"
-            "**<:arrow_arrow:1562350329427923014> GET IN TOUCH**\n\n"
+            "**➡️ GET IN TOUCH**\n\n"
             "> Open a private ticket and explain what you need help with.\n"
             "> Our team will review your request and assist you as soon as possible.\n\n"
-            "**<:arrow_arrow:1562350329427923014> PLEASE PROVIDE**\n\n"
+            "**➡️ PLEASE PROVIDE**\n\n"
             "> • A clear explanation of your issue\n"
             "> • Relevant details or usernames\n"
             "> • Screenshots or proof when necessary\n\n"
-            "**<:arrow_arrow:1562350329427923014> PRIVATE & SECURE**\n\n"
+            "**➡️ PRIVATE & SECURE**\n\n"
             "> Your support ticket is private and only accessible to you and our Support Team.\n\n"
             "**Press the button below to contact us.**"
         ),
