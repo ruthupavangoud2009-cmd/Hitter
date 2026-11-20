@@ -226,8 +226,13 @@ def get_ticket(channel):
         if "=" in part:
             k, v = part.split("=", 1)
             data[k] = v
-    # Topic metadata is authoritative; category IDs may be stale or changed by admins.
-    return data if data.get("owner", "").isdigit() else None
+    # Topic metadata is preferred. Legacy trade channels named mm-* may lack a topic.
+    if data.get("owner", "").isdigit():
+        return data
+    if channel.name.lower().startswith("mm-"):
+        # Legacy ticket fallback: recognize channel as a ticket for ticket-only features.
+        return {"owner": "0", "legacy": "true"}
+    return None
 
 def load_dm_subscription_state() -> tuple:
     try:
