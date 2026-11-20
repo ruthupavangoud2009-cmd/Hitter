@@ -672,11 +672,6 @@ async def open_support_ticket(interaction: discord.Interaction):
 
 
 async def update_dm_subscription(interaction: discord.Interaction, subscribe: bool):
-    if interaction.guild is None or interaction.guild.id != GUILD_ID:
-        return await interaction.response.send_message(
-            "This subscription panel is only available in this server.",
-            ephemeral=True,
-        )
     if interaction.user.bot:
         return await interaction.response.send_message(
             "Bot accounts can't subscribe to announcements.", ephemeral=True
